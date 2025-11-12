@@ -8,6 +8,8 @@ import (
 	probesHttp "github.com/MaisamV/wallet/internal/probes/presentation/http"
 	"github.com/MaisamV/wallet/internal/swagger"
 	swaggerHttp "github.com/MaisamV/wallet/internal/swagger/presentation/http"
+	wallet "github.com/MaisamV/wallet/internal/wallet"
+	infrastructure "github.com/MaisamV/wallet/internal/wallet/infrastructure/repo"
 	"github.com/MaisamV/wallet/platform"
 	"github.com/MaisamV/wallet/platform/config"
 	"github.com/MaisamV/wallet/platform/http"
@@ -22,6 +24,7 @@ type Application struct {
 	HTTPServer *http.Server
 	Probes     *ProbesModule
 	Swagger    *SwaggerModule
+	Wallet     *WalletModule
 }
 
 // ProbesModule holds all probes-related dependencies
@@ -35,6 +38,10 @@ type SwaggerModule struct {
 	DocsHandler *swaggerHttp.DocsHandler
 }
 
+type WalletModule struct {
+	WalletRepo *infrastructure.PgxWalletRepo
+}
+
 // InitializeApplication creates and initializes the application with all dependencies
 func InitializeApplication() (*Application, error) {
 	wire.Build(
@@ -44,10 +51,12 @@ func InitializeApplication() (*Application, error) {
 		// Internal module providers
 		probes.ProbesSet,
 		swagger.SwaggerSet,
+		wallet.WalletSet,
 
 		// Application structure providers
 		ProvideProbesModule,
 		ProvideSwaggerModule,
+		ProvideWalletModule,
 		ProvideApplication,
 	)
 	return &Application{}, nil
@@ -73,6 +82,15 @@ func ProvideSwaggerModule(
 	}
 }
 
+// ProvideSwaggerModule provides the swagger module
+func ProvideWalletModule(
+	repo *infrastructure.PgxWalletRepo,
+) *WalletModule {
+	return &WalletModule{
+		WalletRepo: repo,
+	}
+}
+
 // ProvideApplication provides the main application structure
 func ProvideApplication(
 	config *config.Config,
@@ -80,6 +98,7 @@ func ProvideApplication(
 	httpServer *http.Server,
 	probesModule *ProbesModule,
 	swaggerModule *SwaggerModule,
+	walletModule *WalletModule,
 ) *Application {
 	return &Application{
 		Config:     config,
@@ -87,5 +106,6 @@ func ProvideApplication(
 		HTTPServer: httpServer,
 		Probes:     probesModule,
 		Swagger:    swaggerModule,
+		Wallet:     walletModule,
 	}
 }

@@ -18,10 +18,21 @@ run: ## Start development environment with docker-compose
 	docker-compose up -d
 	@echo open http://localhost:8080/swagger to access APIs
 
+.PHONY: run-no-cache
+run-no-cache: ## Start development environment with docker-compose
+	@echo Starting development environment...
+	docker-compose up --build -d
+	@echo open http://localhost:8080/swagger to access APIs
+
 .PHONY: stop
 stop: ## Stop development environment
 	@echo "Stopping development environment..."
 	docker-compose down
+
+.PHONY: delete
+delete: ## Stop development environment
+	@echo "Stopping development environment..."
+	docker-compose down -v
 
 .PHONY: logs
 logs: ## Show development environment logs

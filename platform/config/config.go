@@ -97,7 +97,7 @@ func setDefaults() {
 	viper.SetDefault("server.allowed_origins", []string{"*"})
 	viper.SetDefault("server.allowed_methods", []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	viper.SetDefault("server.allowed_headers", []string{"Content-Type", "Authorization", "X-Requested-With"})
-	viper.SetDefault("server.allow_credentials", true)
+	viper.SetDefault("server.allow_credentials", false)
 	viper.SetDefault("server.max_age", 86400)
 
 	// Database defaults
@@ -105,7 +105,7 @@ func setDefaults() {
 	viper.SetDefault("database.port", 5432)
 	viper.SetDefault("database.user", "postgres")
 	viper.SetDefault("database.password", "postgres")
-	viper.SetDefault("database.dbname", "go_clean_db")
+	viper.SetDefault("database.dbname", "wallet_db")
 	viper.SetDefault("database.sslmode", "disable")
 	viper.SetDefault("database.max_open_conns", 25)
 	viper.SetDefault("database.max_idle_conns", 5)

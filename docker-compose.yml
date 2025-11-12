@@ -48,6 +48,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: wallet-app
+    environment:
+      WALLET_DATABASE_HOST: postgres
     ports:
       - "8080:8080"
     networks:

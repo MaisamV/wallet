@@ -11,6 +11,8 @@ import (
 	http2 "github.com/MaisamV/wallet/internal/probes/presentation/http"
 	"github.com/MaisamV/wallet/internal/swagger"
 	http3 "github.com/MaisamV/wallet/internal/swagger/presentation/http"
+	"github.com/MaisamV/wallet/internal/wallet"
+	"github.com/MaisamV/wallet/internal/wallet/infrastructure/repo"
 	"github.com/MaisamV/wallet/platform"
 	"github.com/MaisamV/wallet/platform/config"
 	"github.com/MaisamV/wallet/platform/http"
@@ -47,7 +49,9 @@ func InitializeApplication() (*Application, error) {
 	swaggerQueryHandler := swagger.ProvideSwaggerQueryHandler(logger, swaggerLoader)
 	docsHandler := swagger.ProvideDocsHandler(logger, swaggerQueryHandler)
 	swaggerModule := ProvideSwaggerModule(docsHandler)
-	application := ProvideApplication(config, logger, server, probesModule, swaggerModule)
+	pgxWalletRepo := user.ProvideWalletRepository(logger, pool)
+	walletModule := ProvideWalletModule(pgxWalletRepo)
+	application := ProvideApplication(config, logger, server, probesModule, swaggerModule, walletModule)
 	return application, nil
 }
 
@@ -60,6 +64,7 @@ type Application struct {
 	HTTPServer *http.Server
 	Probes     *ProbesModule
 	Swagger    *SwaggerModule
+	Wallet     *WalletModule
 }
 
 // ProbesModule holds all probes-related dependencies
@@ -71,6 +76,10 @@ type ProbesModule struct {
 // SwaggerModule holds all swagger-related dependencies
 type SwaggerModule struct {
 	DocsHandler *http3.DocsHandler
+}
+
+type WalletModule struct {
+	WalletRepo *infrastructure.PgxWalletRepo
 }
 
 // ProvideProbesModule provides the probes module
@@ -93,12 +102,22 @@ func ProvideSwaggerModule(
 	}
 }
 
+// ProvideSwaggerModule provides the swagger module
+func ProvideWalletModule(
+	repo *infrastructure.PgxWalletRepo,
+) *WalletModule {
+	return &WalletModule{
+		WalletRepo: repo,
+	}
+}
+
 // ProvideApplication provides the main application structure
 func ProvideApplication(config2 *config.Config, logger2 logger.Logger,
 
 	httpServer *http.Server,
 	probesModule *ProbesModule,
 	swaggerModule *SwaggerModule,
+	walletModule *WalletModule,
 ) *Application {
 	return &Application{
 		Config:     config2,
@@ -106,5 +125,6 @@ func ProvideApplication(config2 *config.Config, logger2 logger.Logger,
 		HTTPServer: httpServer,
 		Probes:     probesModule,
 		Swagger:    swaggerModule,
+		Wallet:     walletModule,
 	}
 }

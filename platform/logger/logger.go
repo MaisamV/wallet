@@ -106,3 +106,57 @@ func NewWithLevel(level string) Logger {
 	zerolog.SetGlobalLevel(logLevel)
 	return New()
 }
+
+type noopEvent struct {
+	event *zerolog.Event
+}
+
+func (e *noopEvent) Str(key, val string) LogEvent {
+	return &zerologEvent{}
+}
+
+func (e *noopEvent) Int(key string, i int) LogEvent {
+	return &zerologEvent{}
+}
+
+func (e *noopEvent) Int64(key string, i int64) LogEvent {
+	return &zerologEvent{}
+}
+
+func (e *noopEvent) Bool(key string, b bool) LogEvent {
+	return &zerologEvent{}
+}
+
+func (e *noopEvent) Err(err error) LogEvent {
+	return &zerologEvent{}
+}
+
+func (e *noopEvent) Msg(msg string) {
+}
+
+type noopLogger struct {
+}
+
+func (l *noopLogger) Debug() LogEvent {
+	return &noopEvent{}
+}
+
+func (l *noopLogger) Info() LogEvent {
+	return &noopEvent{}
+}
+
+func (l *noopLogger) Warn() LogEvent {
+	return &noopEvent{}
+}
+
+func (l *noopLogger) Error() LogEvent {
+	return &noopEvent{}
+}
+
+func (l *noopLogger) Fatal() LogEvent {
+	return &noopEvent{}
+}
+
+func NewNoopLogger() Logger {
+	return &noopLogger{}
+}
