@@ -24,7 +24,8 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	pool, err := database.NewConnection(cfg.Database, noopLogger)
+	pool, err := database.NewConnection(cfg.TestDatabase, noopLogger)
+	defer pool.Close()
 	repo := NewPgxWalletRepo(noopLogger, pool)
 	const jobsNum = 1000
 	const maxWorkers = 35
@@ -91,7 +92,9 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	pool, err := database.NewConnection(cfg.Database, noopLogger)
+	fmt.Println(cfg.TestDatabase)
+	pool, err := database.NewConnection(cfg.TestDatabase, noopLogger)
+	defer pool.Close()
 	repo := NewPgxWalletRepo(noopLogger, pool)
 	const jobsNum = 1000
 	const maxWorkers = 35

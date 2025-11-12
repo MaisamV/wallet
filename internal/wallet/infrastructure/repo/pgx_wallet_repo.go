@@ -42,6 +42,10 @@ func (dc *PgxWalletRepo) Charge(ctx context.Context, userId int64, idempotency *
 	return &transactionID, nil
 }
 
+func (dc *PgxWalletRepo) Close() {
+	dc.db.Close()
+}
+
 const (
 	chargeQuery = `
 WITH upserted_wallet AS (
@@ -77,6 +81,29 @@ inserted_txn AS (
     SELECT wallet_id, user_id, 'credit' AS type, 'blocked' AS status, $2 AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
     FROM upserted_wallet 
     RETURNING id AS txn_id
+)
+SELECT txn_id FROM inserted_txn;
+`
+	debitWithReleaseQuery = `
+WITH updated_wallet AS (
+    UPDATE wallets
+    SET
+        available_balance = available_balance - $2,
+        updated_at = NOW()
+    WHERE user_id = $1 AND available_balance >= $2
+    RETURNING user_id, total_balance, available_balance
+),
+inserted_txn AS (
+    INSERT INTO transactions 
+        (wallet_id, user_id, type, status, amount, release_time, released, idempotency_key)
+    SELECT wallet_id, user_id, 'debit' AS type, 'blocked' AS status, $2 AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
+    SELECT 
+    ($2 * -1),     
+    'pending_bank' AS status,
+    $3,                       -- idempotency_key
+    NOW()
+  FROM updated_wallet
+  RETURNING id
 )
 SELECT txn_id FROM inserted_txn;
 `

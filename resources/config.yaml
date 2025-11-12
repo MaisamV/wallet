@@ -33,6 +33,17 @@ database:
   max_idle_conns: 10
   conn_max_lifetime: "5m"
 
+test_database:
+  host: "localhost"
+  port: 5433
+  user: "postgres"
+  password: "postgres"
+  dbname: "wallet_db"
+  sslmode: "disable"
+  max_open_conns: 35
+  max_idle_conns: 10
+  conn_max_lifetime: "5m"
+
 # Logging configuration
 logging:
   level: "info"

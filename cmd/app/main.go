@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}
-
+	defer app.Wallet.WalletRepo.Close()
 	app.Logger.Info().Msg("Starting application")
 	app.Logger.Info().Msg("All modules initialized successfully")
 

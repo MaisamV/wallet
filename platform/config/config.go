@@ -9,11 +9,12 @@ import (
 
 // Config holds all configuration for the application
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	Database DatabaseConfig `mapstructure:"database"`
-	Logging  LoggingConfig  `mapstructure:"logging"`
-	Health   HealthConfig   `mapstructure:"health"`
-	Swagger  SwaggerConfig  `mapstructure:"swagger"`
+	Server       ServerConfig   `mapstructure:"server"`
+	Database     DatabaseConfig `mapstructure:"database"`
+	TestDatabase DatabaseConfig `mapstructure:"test_database"`
+	Logging      LoggingConfig  `mapstructure:"logging"`
+	Health       HealthConfig   `mapstructure:"health"`
+	Swagger      SwaggerConfig  `mapstructure:"swagger"`
 }
 
 // ServerConfig holds server-related configuration
@@ -110,6 +111,17 @@ func setDefaults() {
 	viper.SetDefault("database.max_open_conns", 25)
 	viper.SetDefault("database.max_idle_conns", 5)
 	viper.SetDefault("database.conn_max_lifetime", "5m")
+
+	// Test database defaults
+	viper.SetDefault("test_database.host", "localhost")
+	viper.SetDefault("test_database.port", 5433)
+	viper.SetDefault("test_database.user", "postgres")
+	viper.SetDefault("test_database.password", "postgres")
+	viper.SetDefault("test_database.dbname", "wallet_db")
+	viper.SetDefault("test_database.sslmode", "disable")
+	viper.SetDefault("test_database.max_open_conns", 25)
+	viper.SetDefault("test_database.max_idle_conns", 5)
+	viper.SetDefault("test_database.conn_max_lifetime", "5m")
 
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
