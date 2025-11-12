@@ -29,17 +29,17 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 	const jobsNum = 1000
 	const maxWorkers = 35
 
-	uuids := make([]uuid.UUID, jobsNum)
-	for i := 0; i < jobsNum; i++ {
-		u, err := uuid.NewV7()
-		if err != nil {
-			b.Fatalf("failed to generate UUID: %v", err)
-		}
-		uuids[i] = u
-	}
-
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
+		uuids := make([]uuid.UUID, jobsNum)
+		for i := 0; i < jobsNum; i++ {
+			u, err := uuid.NewV7()
+			if err != nil {
+				b.Fatalf("failed to generate UUID: %v", err)
+			}
+			uuids[i] = u
+		}
+
 		var allFinishedWg sync.WaitGroup
 		allFinishedWg.Add(maxWorkers)
 		jobs := make(chan Job, jobsNum)
@@ -53,6 +53,7 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 		allStartedWg.Add(maxWorkers)
 		barrier := make(chan any)
 
+		failedCount := 0
 		for w := 0; w < maxWorkers; w++ {
 			go func(workerID int) {
 				//wait until all goroutines start
@@ -60,7 +61,11 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 				<-barrier
 
 				for job := range jobs {
-					_, _ = repo.Charge(context.Background(), job.ID, &job.UUID, 1000, nil)
+					_, err = repo.Charge(context.Background(), job.ID, &job.UUID, 1000, nil)
+					if err != nil {
+						failedCount++
+						fmt.Printf("Failed: %v", err)
+					}
 				}
 				allFinishedWg.Done()
 			}(w)
@@ -75,7 +80,7 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 		allFinishedWg.Wait()
 		totalTime := time.Since(start)
 
-		b.Logf("Run %d: TPS: %.2f: total time %v", n+1, float64(jobsNum)/totalTime.Seconds(), totalTime)
+		b.Logf("\nRun %d\nTPS: %.2f\nFailed Count: %d\ntotal time %v", n+1, float64(jobsNum)/totalTime.Seconds(), failedCount, totalTime)
 	}
 }
 
@@ -91,17 +96,17 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 	const jobsNum = 1000
 	const maxWorkers = 35
 
-	uuids := make([]uuid.UUID, jobsNum)
-	for i := 0; i < jobsNum; i++ {
-		u, err := uuid.NewV7()
-		if err != nil {
-			b.Fatalf("failed to generate UUID: %v", err)
-		}
-		uuids[i] = u
-	}
-
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
+		uuids := make([]uuid.UUID, jobsNum)
+		for i := 0; i < jobsNum; i++ {
+			u, err := uuid.NewV7()
+			if err != nil {
+				b.Fatalf("failed to generate UUID: %v", err)
+			}
+			uuids[i] = u
+		}
+
 		var allFinishedWg sync.WaitGroup
 		allFinishedWg.Add(maxWorkers)
 		jobs := make(chan Job, jobsNum)
@@ -115,6 +120,7 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 		allStartedWg.Add(maxWorkers)
 		barrier := make(chan any)
 
+		failedCount := 0
 		for w := 0; w < maxWorkers; w++ {
 			go func(workerID int) {
 				//wait until all goroutines start
@@ -123,7 +129,11 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 
 				for job := range jobs {
 					// Charging only user 0 wallet
-					_, _ = repo.Charge(context.Background(), 0, &job.UUID, 1000, nil)
+					_, err = repo.Charge(context.Background(), 0, &job.UUID, 1000, nil)
+					if err != nil {
+						failedCount++
+						fmt.Printf("Failed: %v", err)
+					}
 				}
 				allFinishedWg.Done()
 			}(w)
@@ -138,6 +148,6 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 		allFinishedWg.Wait()
 		totalTime := time.Since(start)
 
-		b.Logf("Run %d: TPS: %.2f: total time %v", n+1, float64(jobsNum)/totalTime.Seconds(), totalTime)
+		b.Logf("\nRun %d\nTPS: %.2f\nFailed Count: %d\ntotal time %v", n+1, float64(jobsNum)/totalTime.Seconds(), failedCount, totalTime)
 	}
 }
