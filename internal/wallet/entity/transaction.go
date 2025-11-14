@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type TransactionType = string
+
+const (
+	CREDIT TransactionType = "credit"
+	DEBIT                  = "debit"
+)
+
 type Status = string
 
 const (
@@ -18,7 +25,7 @@ type Transaction struct {
 	ID          uuid.UUID
 	WalletID    int64
 	UserID      int64
-	Type        string
+	Type        TransactionType
 	Status      Status
 	Amount      int64
 	Idempotency uuid.UUID

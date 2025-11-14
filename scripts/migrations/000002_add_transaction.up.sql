@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+CREATE INDEX idx_transactions_user_id_id ON transactions (user_id, id DESC);
 CREATE INDEX idx_txn_user_created ON transactions (user_id, created_at DESC);
 CREATE INDEX idx_txn_release_pending ON transactions (release_time, released)
     WHERE released = FALSE;
