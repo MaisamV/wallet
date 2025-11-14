@@ -19,14 +19,9 @@ type Job struct {
 
 // BenchmarkCharge_multipleUsersConcurrent benchmarks the WalletRepo.Charge function for different users
 func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
-	noopLogger := logger.NewNoopLogger()
-	cfg, err := config.Load()
-	if err != nil {
-		fmt.Println(err)
-	}
-	pool, err := database.NewConnection(cfg.TestDatabase, noopLogger)
-	defer pool.Close()
-	repo := NewPgxWalletRepo(noopLogger, pool)
+	var err error
+	repo := Init()
+	defer repo.Close()
 	const jobsNum = 1000
 	const maxWorkers = 35
 
@@ -87,15 +82,9 @@ func BenchmarkCharge_multipleUsersConcurrent(b *testing.B) {
 
 // BenchmarkCharge_singleUsersConcurrent benchmarks the WalletRepo.Charge function for a single users
 func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
-	noopLogger := logger.NewNoopLogger()
-	cfg, err := config.Load()
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(cfg.TestDatabase)
-	pool, err := database.NewConnection(cfg.TestDatabase, noopLogger)
-	defer pool.Close()
-	repo := NewPgxWalletRepo(noopLogger, pool)
+	var err error
+	repo := Init()
+	defer repo.Close()
 	const jobsNum = 1000
 	const maxWorkers = 35
 
@@ -153,4 +142,24 @@ func BenchmarkCharge_singleUsersConcurrent(b *testing.B) {
 
 		b.Logf("\nRun %d\nTPS: %.2f\nFailed Count: %d\ntotal time %v", n+1, float64(jobsNum)/totalTime.Seconds(), failedCount, totalTime)
 	}
+}
+
+func Init() *PgxWalletRepo {
+	noopLogger := logger.NewNoopLogger()
+	cfg, err := config.Load()
+	if err != nil {
+		fmt.Println(err)
+	}
+	pool, err := database.NewConnection(cfg.TestDatabase, noopLogger)
+	ctx := context.Background()
+	_, err = pool.Exec(ctx, "DELETE FROM transactions")
+	if err != nil {
+		panic(err)
+	}
+	_, err = pool.Exec(ctx, "DELETE FROM wallets")
+	if err != nil {
+		panic(err)
+	}
+	repo := NewPgxWalletRepo(noopLogger, pool)
+	return repo
 }

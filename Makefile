@@ -15,13 +15,13 @@ help: ## Show this help message
 .PHONY: run
 run: ## Start development environment with docker-compose
 	@echo Starting development environment...
-	docker-compose up -d
+	docker-compose up -d app
 	@echo open http://localhost:8080/swagger to access APIs
 
 .PHONY: run-no-cache
 run-no-cache: ## Start development environment with docker-compose
 	@echo Starting development environment...
-	docker-compose up --build -d
+	docker-compose up --build -d app
 	@echo open http://localhost:8080/swagger to access APIs
 
 .PHONY: stop
@@ -46,6 +46,12 @@ logs: ## Show development environment logs
 test: ## Run all tests
 	@echo Running tests...
 	go test -v ./...
+
+.PHONY: bench
+bench: ## Run all tests
+	@echo Running benchmarks...
+	docker-compose up -d postgres_test migrate_test
+	go test -v ./... -bench=. -benchmem
 
 .PHONY: test-coverage
 test-coverage: ## Run tests with coverage
