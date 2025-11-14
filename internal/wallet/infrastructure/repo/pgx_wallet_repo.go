@@ -79,7 +79,7 @@ func (dc *PgxWalletRepo) Debit(ctx context.Context, userId int64, idempotency *u
 	var transactionID uuid.UUID
 	err := dc.db.QueryRow(opCtx, query, userId, debitAmount, releaseTime, idempotency).Scan(&transactionID)
 	if err != nil {
-		return nil, fmt.Errorf("database charge operation failed: %w", err)
+		return nil, fmt.Errorf("database debit operation failed: %w", err)
 	}
 
 	return &transactionID, nil
