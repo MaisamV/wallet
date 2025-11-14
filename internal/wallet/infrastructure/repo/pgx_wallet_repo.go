@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/MaisamV/wallet/platform/logger"
 	"github.com/gofrs/uuid/v5"
@@ -26,15 +27,57 @@ func (dc *PgxWalletRepo) Charge(ctx context.Context, userId int64, idempotency *
 	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
+	if idempotency == nil {
+		return nil, errors.New("charge operations must have idempotency")
+	}
+
+	if chargeAmount <= 0 {
+		return nil, errors.New("negative or 0 is not acceptable amount for charge operation")
+	}
+
+	if releaseTime != nil && time.Now().After(*releaseTime) {
+		return nil, errors.New("release time can't be in the past")
+	}
+
 	var query string
 	if releaseTime == nil {
 		query = chargeQuery
 	} else {
 		query = chargeWithReleaseQuery
 	}
-	// Simple ping to check database connectivity
 	var transactionID uuid.UUID
 	err := dc.db.QueryRow(opCtx, query, userId, chargeAmount, releaseTime, idempotency).Scan(&transactionID)
+	if err != nil {
+		return nil, fmt.Errorf("database charge operation failed: %w", err)
+	}
+
+	return &transactionID, nil
+}
+
+// Debit deducts from user's wallet balance
+func (dc *PgxWalletRepo) Debit(ctx context.Context, userId int64, idempotency *uuid.UUID, debitAmount int64, releaseTime *time.Time) (*uuid.UUID, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	if idempotency == nil {
+		return nil, errors.New("debits operations must have idempotency")
+	}
+
+	if debitAmount <= 0 {
+		return nil, errors.New("negative or 0 is not acceptable amount for debit operation")
+	}
+
+	if releaseTime == nil {
+		return nil, errors.New("debits must have release time")
+	}
+
+	if time.Now().After(*releaseTime) {
+		return nil, errors.New("release time can't be in the past")
+	}
+
+	query := debitWithReleaseQuery
+	var transactionID uuid.UUID
+	err := dc.db.QueryRow(opCtx, query, userId, debitAmount, releaseTime, idempotency).Scan(&transactionID)
 	if err != nil {
 		return nil, fmt.Errorf("database charge operation failed: %w", err)
 	}
@@ -91,19 +134,14 @@ WITH updated_wallet AS (
         available_balance = available_balance - $2,
         updated_at = NOW()
     WHERE user_id = $1 AND available_balance >= $2
-    RETURNING user_id, total_balance, available_balance
+    RETURNING id AS wallet_id, user_id
 ),
 inserted_txn AS (
     INSERT INTO transactions 
         (wallet_id, user_id, type, status, amount, release_time, released, idempotency_key)
-    SELECT wallet_id, user_id, 'debit' AS type, 'blocked' AS status, $2 AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
-    SELECT 
-    ($2 * -1),     
-    'pending_bank' AS status,
-    $3,                       -- idempotency_key
-    NOW()
-  FROM updated_wallet
-  RETURNING id
+    SELECT wallet_id, user_id, 'debit' AS type, 'blocked' AS status, ($2 * -1) AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
+    FROM updated_wallet
+    RETURNING id AS txn_id
 )
 SELECT txn_id FROM inserted_txn;
 `
