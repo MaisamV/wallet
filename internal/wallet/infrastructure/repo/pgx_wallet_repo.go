@@ -171,7 +171,7 @@ SELECT txn_id FROM inserted_txn;
 `
 	getBalance = `
 SELECT id, user_id, total_balance, available_balance 
-FROM updated_wallet
+FROM wallets
 WHERE user_id = $1
 `
 )
