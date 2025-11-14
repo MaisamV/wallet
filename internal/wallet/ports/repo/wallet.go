@@ -14,10 +14,10 @@ type WalletRepo interface {
 
 type WalletWriter interface {
 	Charge(ctx context.Context, userId int64, idempotency *uuid.UUID, chargeAmount int64, releaseTime *time.Time) (txnId *uuid.UUID, err error)
-	Debit(ctx context.Context, userId int64, debitAmount int64, releaseTime time.Time) error
+	Debit(ctx context.Context, userId int64, idempotency *uuid.UUID, debitAmount int64, releaseTime *time.Time) (txnId *uuid.UUID, err error)
 }
 
 type WalletReader interface {
-	GetWallet(ctx context.Context, userId uuid.UUID) (*entity.Wallet, error)
-	GetTransactionList(ctx context.Context, userId uuid.UUID) ([]entity.Transaction, error)
+	GetBalance(ctx context.Context, userId int64) (*entity.Wallet, error)
+	GetTransactionList(ctx context.Context, userId int64) ([]entity.Transaction, error)
 }
