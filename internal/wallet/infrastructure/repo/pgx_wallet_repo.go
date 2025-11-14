@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/MaisamV/wallet/internal/wallet/entity"
 	"github.com/MaisamV/wallet/platform/logger"
 	"github.com/gofrs/uuid/v5"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
 )
@@ -75,9 +77,8 @@ func (dc *PgxWalletRepo) Debit(ctx context.Context, userId int64, idempotency *u
 		return nil, errors.New("release time can't be in the past")
 	}
 
-	query := debitWithReleaseQuery
 	var transactionID uuid.UUID
-	err := dc.db.QueryRow(opCtx, query, userId, debitAmount, releaseTime, idempotency).Scan(&transactionID)
+	err := dc.db.QueryRow(opCtx, debitWithReleaseQuery, userId, debitAmount, releaseTime, idempotency).Scan(&transactionID)
 	if err != nil {
 		return nil, fmt.Errorf("database debit operation failed: %w", err)
 	}
@@ -85,6 +86,29 @@ func (dc *PgxWalletRepo) Debit(ctx context.Context, userId int64, idempotency *u
 	return &transactionID, nil
 }
 
+// GetBalance return user's wallet balance
+func (dc *PgxWalletRepo) GetBalance(ctx context.Context, userId int64) (*entity.Wallet, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	var w *entity.Wallet
+	var id int64
+	var totalBalance int64
+	var availableBalance int64
+	err := dc.db.QueryRow(opCtx, getBalance, userId).Scan(&id, &userId, &totalBalance, &availableBalance)
+	switch err {
+	case pgx.ErrNoRows:
+		w = entity.NewWallet(int64(0), userId, int64(0), int64(0))
+	case nil:
+		w = entity.NewWallet(id, userId, totalBalance, availableBalance)
+	default:
+		return nil, fmt.Errorf("get balance operation failed: %w", err)
+	}
+
+	return w, nil
+}
+
+// Close gracefully close all database pool connections
 func (dc *PgxWalletRepo) Close() {
 	dc.db.Close()
 }
@@ -144,5 +168,10 @@ inserted_txn AS (
     RETURNING id AS txn_id
 )
 SELECT txn_id FROM inserted_txn;
+`
+	getBalance = `
+SELECT id, user_id, total_balance, available_balance 
+FROM updated_wallet
+WHERE user_id = $1
 `
 )
