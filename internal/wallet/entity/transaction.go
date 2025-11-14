@@ -34,3 +34,8 @@ type Transaction struct {
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
+
+type TransactionPage struct {
+	TransactionList []Transaction
+	Cursor          *uuid.UUID
+}

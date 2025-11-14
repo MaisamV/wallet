@@ -109,11 +109,11 @@ func (dc *PgxWalletRepo) GetBalance(ctx context.Context, userId int64) (*entity.
 }
 
 // GetTransactionList return a list of user transactions
-func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, cursor *uuid.UUID, limit uint) ([]entity.Transaction, error) {
+func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, cursor *uuid.UUID, limit int) (*entity.TransactionPage, error) {
 	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
 	defer cancel()
 
-	if limit == 0 {
+	if limit <= 0 {
 		limit = 10
 	}
 	if limit > 30 {
@@ -143,7 +143,15 @@ func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, c
 		return nil, fmt.Errorf("something went wrong reading transaction list: %w", rows.Err())
 	}
 
-	return list, nil
+	page := entity.TransactionPage{
+		TransactionList: list,
+	}
+	size := len(list)
+	if size == limit {
+		page.Cursor = &list[size-1].ID
+	}
+
+	return &page, nil
 }
 
 // Close gracefully close all database pool connections
