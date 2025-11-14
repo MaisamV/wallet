@@ -108,6 +108,44 @@ func (dc *PgxWalletRepo) GetBalance(ctx context.Context, userId int64) (*entity.
 	return w, nil
 }
 
+// GetTransactionList return a list of user transactions
+func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, cursor *uuid.UUID, limit uint) ([]entity.Transaction, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	if limit == 0 {
+		limit = 10
+	}
+	if limit > 30 {
+		limit = 30
+	}
+
+	var err error
+	var rows pgx.Rows
+	if cursor == nil {
+		rows, err = dc.db.Query(opCtx, getTransactionsFirstPage, userId, limit)
+	} else {
+		rows, err = dc.db.Query(opCtx, getTransactionsNextPage, userId, limit, cursor)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get transaction list operation failed: %w", err)
+	}
+	defer rows.Close()
+	list := make([]entity.Transaction, 0, limit)
+	for rows.Next() {
+		t := entity.Transaction{}
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Status, &t.Amount, &t.CreatedAt); err != nil {
+			return nil, fmt.Errorf("error in reading transaction row: %w", err)
+		}
+		list = append(list, t)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("something went wrong reading transaction list: %w", rows.Err())
+	}
+
+	return list, nil
+}
+
 // Close gracefully close all database pool connections
 func (dc *PgxWalletRepo) Close() {
 	dc.db.Close()
@@ -173,5 +211,20 @@ SELECT txn_id FROM inserted_txn;
 SELECT id, user_id, total_balance, available_balance 
 FROM wallets
 WHERE user_id = $1
+`
+	getTransactionsFirstPage = `
+SELECT id, user_id, type, status, amount, created_at 
+FROM transactions
+WHERE user_id = $1
+ORDER BY ID DESC
+LIMIT $2
+`
+	getTransactionsNextPage = `
+SELECT id, user_id, type, status, amount, created_at 
+FROM transactions
+WHERE user_id = $1
+AND id < $3
+ORDER BY ID DESC
+LIMIT $2
 `
 )
