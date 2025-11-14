@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     amount             bigint NOT NULL,
     release_time       TIMESTAMPTZ NULL,
     released           BOOLEAN NOT NULL DEFAULT FALSE,
-    idempotency_key    UUID NULL,
+    idempotency_key    UUID NOT NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
