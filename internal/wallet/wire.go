@@ -4,7 +4,9 @@ import (
 	"github.com/MaisamV/wallet/internal/wallet/application/command"
 	"github.com/MaisamV/wallet/internal/wallet/application/query"
 	infrastructure "github.com/MaisamV/wallet/internal/wallet/infrastructure/repo"
+	service2 "github.com/MaisamV/wallet/internal/wallet/infrastructure/service"
 	"github.com/MaisamV/wallet/internal/wallet/presentation/http"
+	"github.com/MaisamV/wallet/platform/config"
 	"github.com/MaisamV/wallet/platform/logger"
 	"github.com/google/wire"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -12,6 +14,10 @@ import (
 
 func ProvideWalletRepository(logger logger.Logger, db *pgxpool.Pool) *infrastructure.PgxWalletRepo {
 	return infrastructure.NewPgxWalletRepo(logger, db)
+}
+
+func ProvideShaparakMockService(logger logger.Logger) *service2.ShaparakMockService {
+	return service2.NewShaparakMockService(logger)
 }
 
 func ProvideChargeCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.ChargeCommandHandler {
@@ -24,6 +30,10 @@ func ProvideDebitCommandHandler(logger logger.Logger, repo *infrastructure.PgxWa
 
 func ProvideReleaseCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.ReleaseCommandHandler {
 	return command.NewReleaseCommandHandler(logger, repo)
+}
+
+func ProvideWithdrawCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo, service *service2.ShaparakMockService, cfg *config.Config) *command.WithdrawCommandHandler {
+	return command.NewWithdrawCommandHandler(logger, repo, service, cfg.Withdraw.WorkerCount)
 }
 
 func ProvideGetBalanceQueryHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *query.GetBalanceQueryHandler {
@@ -46,6 +56,8 @@ var WalletSet = wire.NewSet(
 	ProvideDebitCommandHandler,
 	ProvideChargeCommandHandler,
 	ProvideReleaseCommandHandler,
+	ProvideWithdrawCommandHandler,
+	ProvideShaparakMockService,
 	ProvideGetBalanceQueryHandler,
 	ProvideGetTransactionPageQueryHandler,
 	ProvideWalletHandler,
