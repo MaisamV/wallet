@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -81,6 +79,23 @@ services:
       "up"
     ]
     restart: "no"
+
+  # Release worker
+  release_worker:
+    build:
+      context: .
+      dockerfile: cmd/release_job/Dockerfile
+    container_name: wallet-release-worker
+    environment:
+      WALLET_DATABASE_HOST: postgres
+    networks:
+      - wallet-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
 
   # Application
   app:
