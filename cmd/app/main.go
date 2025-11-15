@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to initialize application: %v", err)
 	}
-	defer app.Wallet.WalletRepo.Close()
+	defer app.Wallet.Repo.Close()
 	app.Logger.Info().Msg("Starting application")
 	app.Logger.Info().Msg("All modules initialized successfully")
 
@@ -25,6 +25,7 @@ func main() {
 	app.Probes.PingHandler.RegisterRoutes(fiberApp)
 	app.Probes.HealthHandler.RegisterRoutes(fiberApp)
 	app.Swagger.DocsHandler.RegisterRoutes(fiberApp, app.Config.Swagger.Enabled)
+	app.Wallet.WalletHandler.RegisterRoutes(fiberApp)
 	app.Logger.Info().Msg("Routes registered successfully")
 
 	// Start server

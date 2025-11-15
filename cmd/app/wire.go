@@ -10,6 +10,7 @@ import (
 	swaggerHttp "github.com/MaisamV/wallet/internal/swagger/presentation/http"
 	wallet "github.com/MaisamV/wallet/internal/wallet"
 	infrastructure "github.com/MaisamV/wallet/internal/wallet/infrastructure/repo"
+	walletHttp "github.com/MaisamV/wallet/internal/wallet/presentation/http"
 	"github.com/MaisamV/wallet/platform"
 	"github.com/MaisamV/wallet/platform/config"
 	"github.com/MaisamV/wallet/platform/http"
@@ -39,7 +40,8 @@ type SwaggerModule struct {
 }
 
 type WalletModule struct {
-	WalletRepo *infrastructure.PgxWalletRepo
+	WalletHandler *walletHttp.WalletHandler
+	Repo          *infrastructure.PgxWalletRepo
 }
 
 // InitializeApplication creates and initializes the application with all dependencies
@@ -84,10 +86,12 @@ func ProvideSwaggerModule(
 
 // ProvideSwaggerModule provides the swagger module
 func ProvideWalletModule(
+	handler *walletHttp.WalletHandler,
 	repo *infrastructure.PgxWalletRepo,
 ) *WalletModule {
 	return &WalletModule{
-		WalletRepo: repo,
+		WalletHandler: handler,
+		Repo:          repo,
 	}
 }
 

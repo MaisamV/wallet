@@ -35,7 +35,7 @@ type ChargeCommandHandler struct {
 	repo   repo.WalletWriter
 }
 
-func NewAddContactCommandHandler(logger logger.Logger, repo repo.WalletWriter) *ChargeCommandHandler {
+func NewChargeCommandHandler(logger logger.Logger, repo repo.WalletWriter) *ChargeCommandHandler {
 	return &ChargeCommandHandler{
 		logger: logger,
 		repo:   repo,

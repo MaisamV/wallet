@@ -13,6 +13,7 @@ import (
 	http3 "github.com/MaisamV/wallet/internal/swagger/presentation/http"
 	"github.com/MaisamV/wallet/internal/wallet"
 	"github.com/MaisamV/wallet/internal/wallet/infrastructure/repo"
+	http4 "github.com/MaisamV/wallet/internal/wallet/presentation/http"
 	"github.com/MaisamV/wallet/platform"
 	"github.com/MaisamV/wallet/platform/config"
 	"github.com/MaisamV/wallet/platform/http"
@@ -50,7 +51,12 @@ func InitializeApplication() (*Application, error) {
 	docsHandler := swagger.ProvideDocsHandler(logger, swaggerQueryHandler)
 	swaggerModule := ProvideSwaggerModule(docsHandler)
 	pgxWalletRepo := user.ProvideWalletRepository(logger, pool)
-	walletModule := ProvideWalletModule(pgxWalletRepo)
+	withdrawCommandHandler := user.ProvideWithdrawCommandHandler(logger, pgxWalletRepo)
+	chargeCommandHandler := user.ProvideChargeCommandHandler(logger, pgxWalletRepo)
+	getBalanceQueryHandler := user.ProvideGetBalanceQueryHandler(logger, pgxWalletRepo)
+	getTransactionPageQueryHandler := user.ProvideGetTransactionPageQueryHandler(logger, pgxWalletRepo)
+	walletHandler := user.ProvideWalletHandler(logger, withdrawCommandHandler, chargeCommandHandler, getBalanceQueryHandler, getTransactionPageQueryHandler)
+	walletModule := ProvideWalletModule(walletHandler, pgxWalletRepo)
 	application := ProvideApplication(config, logger, server, probesModule, swaggerModule, walletModule)
 	return application, nil
 }
@@ -79,7 +85,8 @@ type SwaggerModule struct {
 }
 
 type WalletModule struct {
-	WalletRepo *infrastructure.PgxWalletRepo
+	WalletHandler *http4.WalletHandler
+	Repo          *infrastructure.PgxWalletRepo
 }
 
 // ProvideProbesModule provides the probes module
@@ -104,10 +111,12 @@ func ProvideSwaggerModule(
 
 // ProvideSwaggerModule provides the swagger module
 func ProvideWalletModule(
+	handler *http4.WalletHandler,
 	repo *infrastructure.PgxWalletRepo,
 ) *WalletModule {
 	return &WalletModule{
-		WalletRepo: repo,
+		WalletHandler: handler,
+		Repo:          repo,
 	}
 }
 
