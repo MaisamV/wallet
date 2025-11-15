@@ -18,8 +18,8 @@ func ProvideChargeCommandHandler(logger logger.Logger, repo *infrastructure.PgxW
 	return command.NewChargeCommandHandler(logger, repo)
 }
 
-func ProvideWithdrawCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.WithdrawCommandHandler {
-	return command.NewWithdrawCommandHandler(logger, repo)
+func ProvideDebitCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.DebitCommandHandler {
+	return command.NewDebitCommandHandler(logger, repo)
 }
 
 func ProvideReleaseCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.ReleaseCommandHandler {
@@ -34,7 +34,7 @@ func ProvideGetTransactionPageQueryHandler(logger logger.Logger, repo *infrastru
 	return query.NewGetTransactionPageQueryHandler(logger, repo)
 }
 
-func ProvideWalletHandler(logger logger.Logger, withdrawHandler *command.WithdrawCommandHandler,
+func ProvideWalletHandler(logger logger.Logger, withdrawHandler *command.DebitCommandHandler,
 	chargeHandler *command.ChargeCommandHandler, balanceHandler *query.GetBalanceQueryHandler,
 	transactionPageHandler *query.GetTransactionPageQueryHandler) *http.WalletHandler {
 	return http.NewWalletHandler(logger, withdrawHandler, chargeHandler, balanceHandler, transactionPageHandler)
@@ -43,7 +43,7 @@ func ProvideWalletHandler(logger logger.Logger, withdrawHandler *command.Withdra
 // WalletSet is a wire provider set for all user dependencies
 var WalletSet = wire.NewSet(
 	ProvideWalletRepository,
-	ProvideWithdrawCommandHandler,
+	ProvideDebitCommandHandler,
 	ProvideChargeCommandHandler,
 	ProvideReleaseCommandHandler,
 	ProvideGetBalanceQueryHandler,

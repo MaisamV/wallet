@@ -51,11 +51,11 @@ func InitializeApplication() (*Application, error) {
 	docsHandler := swagger.ProvideDocsHandler(logger, swaggerQueryHandler)
 	swaggerModule := ProvideSwaggerModule(docsHandler)
 	pgxWalletRepo := user.ProvideWalletRepository(logger, pool)
-	withdrawCommandHandler := user.ProvideWithdrawCommandHandler(logger, pgxWalletRepo)
+	debitCommandHandler := user.ProvideDebitCommandHandler(logger, pgxWalletRepo)
 	chargeCommandHandler := user.ProvideChargeCommandHandler(logger, pgxWalletRepo)
 	getBalanceQueryHandler := user.ProvideGetBalanceQueryHandler(logger, pgxWalletRepo)
 	getTransactionPageQueryHandler := user.ProvideGetTransactionPageQueryHandler(logger, pgxWalletRepo)
-	walletHandler := user.ProvideWalletHandler(logger, withdrawCommandHandler, chargeCommandHandler, getBalanceQueryHandler, getTransactionPageQueryHandler)
+	walletHandler := user.ProvideWalletHandler(logger, debitCommandHandler, chargeCommandHandler, getBalanceQueryHandler, getTransactionPageQueryHandler)
 	walletModule := ProvideWalletModule(walletHandler, pgxWalletRepo)
 	application := ProvideApplication(config, logger, server, probesModule, swaggerModule, walletModule)
 	return application, nil

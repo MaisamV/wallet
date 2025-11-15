@@ -10,14 +10,14 @@ import (
 	"time"
 )
 
-type WithdrawCommand struct {
+type DebitCommand struct {
 	UserId      int64
 	Amount      int64
 	Idempotency *uuid.UUID
 	ReleaseTime *time.Time
 }
 
-func (cc *WithdrawCommand) Err() error {
+func (cc *DebitCommand) Err() error {
 	if cc.Amount <= 0 {
 		return errors.New("amount cannot be negative or zero")
 	}
@@ -30,19 +30,19 @@ func (cc *WithdrawCommand) Err() error {
 	return nil
 }
 
-type WithdrawCommandHandler struct {
+type DebitCommandHandler struct {
 	logger logger.Logger
 	repo   repo.WalletWriter
 }
 
-func NewWithdrawCommandHandler(logger logger.Logger, repo repo.WalletWriter) *WithdrawCommandHandler {
-	return &WithdrawCommandHandler{
+func NewDebitCommandHandler(logger logger.Logger, repo repo.WalletWriter) *DebitCommandHandler {
+	return &DebitCommandHandler{
 		logger: logger,
 		repo:   repo,
 	}
 }
 
-func (h *WithdrawCommandHandler) Handle(ctx context.Context, command WithdrawCommand) (*uuid.UUID, error) {
+func (h *DebitCommandHandler) Handle(ctx context.Context, command DebitCommand) (*uuid.UUID, error) {
 	if err := command.Err(); err != nil {
 		return nil, fmt.Errorf("input variables are not correct: %w", err)
 	}

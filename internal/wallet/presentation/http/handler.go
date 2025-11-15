@@ -13,18 +13,18 @@ import (
 
 type WalletHandler struct {
 	logger                 logger.Logger
-	withdrawHandler        *command.WithdrawCommandHandler
+	debitHandler           *command.DebitCommandHandler
 	chargeHandler          *command.ChargeCommandHandler
 	balanceHandler         *query.GetBalanceQueryHandler
 	transactionPageHandler *query.GetTransactionPageQueryHandler
 }
 
-func NewWalletHandler(logger logger.Logger, withdrawHandler *command.WithdrawCommandHandler,
+func NewWalletHandler(logger logger.Logger, debitHandler *command.DebitCommandHandler,
 	chargeHandler *command.ChargeCommandHandler, balanceHandler *query.GetBalanceQueryHandler,
 	transactionPageHandler *query.GetTransactionPageQueryHandler) *WalletHandler {
 	return &WalletHandler{
 		logger:                 logger,
-		withdrawHandler:        withdrawHandler,
+		debitHandler:           debitHandler,
 		chargeHandler:          chargeHandler,
 		balanceHandler:         balanceHandler,
 		transactionPageHandler: transactionPageHandler,
@@ -112,13 +112,13 @@ func (h *WalletHandler) Withdraw(c *fiber.Ctx) error {
 		return h.respondError(c, http.StatusBadRequest, err, "Could not parse idempotency")
 	}
 
-	cmd := command.WithdrawCommand{
+	cmd := command.DebitCommand{
 		UserId:      userID,
 		Amount:      withdraw.Amount,
 		Idempotency: &idempotency,
 		ReleaseTime: withdraw.ReleaseTime,
 	}
-	transactionID, err := h.withdrawHandler.Handle(ctx, cmd)
+	transactionID, err := h.debitHandler.Handle(ctx, cmd)
 	if err != nil {
 		return h.respondError(c, http.StatusInternalServerError, err, "Could not withdraw")
 	}
