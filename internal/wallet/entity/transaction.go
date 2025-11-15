@@ -22,20 +22,20 @@ const (
 )
 
 type Transaction struct {
-	ID          uuid.UUID
-	WalletID    int64
-	UserID      int64
-	Type        TransactionType
-	Status      Status
-	Amount      int64
-	Idempotency uuid.UUID
-	ReleaseTime time.Time
-	Released    bool
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	ID          uuid.UUID       `json:"id,omitempty"`
+	WalletID    int64           `json:"-"`
+	UserID      int64           `json:"-"`
+	Type        TransactionType `json:"type,omitempty"`
+	Status      Status          `json:"status,omitempty"`
+	Amount      int64           `json:"amount,omitempty"`
+	Idempotency uuid.UUID       `json:"-"`
+	ReleaseTime *time.Time      `json:"release_time,omitempty"`
+	Released    bool            `json:"released"`
+	CreatedAt   time.Time       `json:"created_at,omitempty"`
+	UpdatedAt   time.Time       `json:"-"`
 }
 
 type TransactionPage struct {
-	TransactionList []Transaction
-	Cursor          *uuid.UUID
+	TransactionList []Transaction `json:"transaction_list,omitempty"`
+	Cursor          *uuid.UUID    `json:"cursor,omitempty"`
 }
