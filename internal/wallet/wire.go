@@ -22,6 +22,10 @@ func ProvideWithdrawCommandHandler(logger logger.Logger, repo *infrastructure.Pg
 	return command.NewWithdrawCommandHandler(logger, repo)
 }
 
+func ProvideReleaseCommandHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *command.ReleaseCommandHandler {
+	return command.NewReleaseCommandHandler(logger, repo)
+}
+
 func ProvideGetBalanceQueryHandler(logger logger.Logger, repo *infrastructure.PgxWalletRepo) *query.GetBalanceQueryHandler {
 	return query.NewGetBalanceQueryHandler(logger, repo)
 }
@@ -41,6 +45,7 @@ var WalletSet = wire.NewSet(
 	ProvideWalletRepository,
 	ProvideWithdrawCommandHandler,
 	ProvideChargeCommandHandler,
+	ProvideReleaseCommandHandler,
 	ProvideGetBalanceQueryHandler,
 	ProvideGetTransactionPageQueryHandler,
 	ProvideWalletHandler,
