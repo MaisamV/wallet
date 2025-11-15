@@ -134,7 +134,7 @@ func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, c
 	list := make([]entity.Transaction, 0, limit)
 	for rows.Next() {
 		t := entity.Transaction{}
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Status, &t.Amount, &t.CreatedAt); err != nil {
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Status, &t.Amount, &t.CreatedAt, &t.Released, &t.ReleaseTime, &t.Idempotency); err != nil {
 			return nil, fmt.Errorf("error in reading transaction row: %w", err)
 		}
 		list = append(list, t)
@@ -221,14 +221,14 @@ FROM wallets
 WHERE user_id = $1
 `
 	getTransactionsFirstPage = `
-SELECT id, user_id, type, status, amount, created_at 
+SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key
 FROM transactions
 WHERE user_id = $1
 ORDER BY ID DESC
 LIMIT $2
 `
 	getTransactionsNextPage = `
-SELECT id, user_id, type, status, amount, created_at 
+SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key
 FROM transactions
 WHERE user_id = $1
 AND id < $3
