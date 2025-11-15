@@ -154,6 +154,31 @@ func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, c
 	return &page, nil
 }
 
+// ReleaseDueTransactions return the list of released transactions
+func (dc *PgxWalletRepo) ReleaseDueTransactions(ctx context.Context, batchSize int) ([]entity.Transaction, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	rows, err := dc.db.Query(opCtx, releaseQuery, batchSize)
+	if err != nil {
+		return nil, fmt.Errorf("release due transactions failed: %w", err)
+	}
+	defer rows.Close()
+	list := make([]entity.Transaction, 0, batchSize)
+	for rows.Next() {
+		t := entity.Transaction{}
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Amount); err != nil {
+			return nil, fmt.Errorf("error in reading due transaction row: %w", err)
+		}
+		list = append(list, t)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("something went wrong reading due transaction list: %w", rows.Err())
+	}
+
+	return list, nil
+}
+
 // Close gracefully close all database pool connections
 func (dc *PgxWalletRepo) Close() {
 	dc.db.Close()
@@ -214,6 +239,45 @@ inserted_txn AS (
     RETURNING id AS txn_id
 )
 SELECT txn_id FROM inserted_txn;
+`
+	releaseQuery = `
+WITH due_tx AS (
+    SELECT id, wallet_id, user_id, type, amount
+    FROM transactions
+    WHERE released = FALSE
+      AND release_time IS NOT NULL
+      AND release_time <= NOW()
+    ORDER BY release_time ASC
+    LIMIT $1                     -- batch size
+    FOR UPDATE SKIP LOCKED
+),
+updated_wallets AS (
+    UPDATE wallets w
+    SET 
+        available_balance = w.available_balance +
+            CASE 
+                WHEN tx.type = 'credit' THEN tx.amount
+                ELSE 0
+            END,
+        total_balance = w.total_balance +
+            CASE
+                WHEN tx.type = 'debit' THEN tx.amount
+                ELSE 0
+            END,
+        updated_at = NOW()
+    FROM due_tx tx
+    WHERE w.id = tx.wallet_id
+    RETURNING w.id AS wallet_id
+),
+updated_tx AS (
+    UPDATE transactions t
+    SET released = TRUE,
+        updated_at = NOW()
+    FROM due_tx tx
+    WHERE t.id = tx.id
+    RETURNING t.id, t.user_id, t.type, t.amount
+)
+SELECT * FROM updated_tx;
 `
 	getBalance = `
 SELECT id, user_id, total_balance, available_balance 
