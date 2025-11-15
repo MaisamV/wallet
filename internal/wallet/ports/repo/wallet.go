@@ -16,6 +16,8 @@ type WalletWriter interface {
 	Charge(ctx context.Context, userId int64, idempotency *uuid.UUID, chargeAmount int64, releaseTime *time.Time) (txnId *uuid.UUID, err error)
 	Debit(ctx context.Context, userId int64, idempotency *uuid.UUID, debitAmount int64, releaseTime *time.Time) (txnId *uuid.UUID, err error)
 	ReleaseDueTransactions(ctx context.Context, batchSize int) ([]entity.Transaction, error)
+	UpdateTransactionStatus(ctx context.Context, id *uuid.UUID, txStatus entity.Status, bankTxID *uuid.UUID) error
+	IncreaseTransactionRetryCount(ctx context.Context, id *uuid.UUID) error
 }
 
 type WalletReader interface {

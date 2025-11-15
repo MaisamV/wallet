@@ -15,10 +15,9 @@ const (
 type Status = string
 
 const (
-	pending  Status = "pending"
-	CANCELED        = "canceled"
-	FAILED          = "failed"
-	SUCCESS         = "success"
+	PENDING Status = "pending"
+	FAILED         = "failed"
+	SUCCESS        = "success"
 )
 
 type Transaction struct {
