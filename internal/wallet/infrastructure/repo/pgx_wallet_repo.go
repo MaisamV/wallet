@@ -179,6 +179,30 @@ func (dc *PgxWalletRepo) ReleaseDueTransactions(ctx context.Context, batchSize i
 	return list, nil
 }
 
+func (dc *PgxWalletRepo) GetPendingTransactions(ctx context.Context, limit int) ([]entity.Transaction, error) {
+	opCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	rows, err := dc.db.Query(opCtx, getPendingTransactions, limit)
+	if err != nil {
+		return nil, fmt.Errorf("release due transactions failed: %w", err)
+	}
+	defer rows.Close()
+	list := make([]entity.Transaction, 0, limit)
+	for rows.Next() {
+		t := entity.Transaction{}
+		if err := rows.Scan(&t.ID, &t.RetryCount, &t.Amount, &t.Idempotency); err != nil {
+			return nil, fmt.Errorf("error in reading due transaction row: %w", err)
+		}
+		list = append(list, t)
+	}
+	if rows.Err() != nil {
+		return nil, fmt.Errorf("something went wrong reading due transaction list: %w", rows.Err())
+	}
+
+	return list, nil
+}
+
 // Close gracefully close all database pool connections
 func (dc *PgxWalletRepo) Close() {
 	dc.db.Close()
@@ -298,5 +322,14 @@ WHERE user_id = $1
 AND id < $3
 ORDER BY ID DESC
 LIMIT $2
+`
+	getPendingTransactions = `
+UPDATE transactions
+SET last_retry = NOW()
+WHERE status = 'pending'
+  AND (last_retry IS NULL OR last_retry <= NOW() - INTERVAL '5 minutes')
+ORDER BY id
+LIMIT $1
+RETURNING id, retry_count, amount, idempotency_key;
 `
 )

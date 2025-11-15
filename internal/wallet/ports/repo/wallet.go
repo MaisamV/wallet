@@ -21,4 +21,5 @@ type WalletWriter interface {
 type WalletReader interface {
 	GetBalance(ctx context.Context, userId int64) (*entity.Wallet, error)
 	GetTransactionList(ctx context.Context, userId int64, cursor *uuid.UUID, limit int) (*entity.TransactionPage, error)
+	GetPendingTransactions(ctx context.Context, limit int) ([]entity.Transaction, error)
 }

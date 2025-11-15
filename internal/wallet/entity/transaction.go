@@ -31,8 +31,9 @@ type Transaction struct {
 	Idempotency uuid.UUID       `json:"-"`
 	ReleaseTime *time.Time      `json:"release_time,omitempty"`
 	Released    bool            `json:"released"`
-	CreatedAt   time.Time       `json:"created_at,omitempty"`
-	UpdatedAt   time.Time       `json:"-"`
+	RetryCount  int
+	CreatedAt   time.Time `json:"created_at,omitempty"`
+	UpdatedAt   time.Time `json:"-"`
 }
 
 type TransactionPage struct {
