@@ -14,6 +14,8 @@ servers:
 tags:
   - name: Health
     description: Health check and monitoring endpoints
+  - name: Wallet
+    description: Wallet related APIs
 
 paths:
   /ping:
@@ -106,6 +108,168 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallet/{userid}:
+    get:
+      tags:
+        - Wallet
+      summary: Get wallet balance
+      description: Returns the available and total balance of the user's wallet.
+      operationId: getWalletBalance
+      parameters:
+        - name: userid
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: User ID whose balance is requested
+      responses:
+        '200':
+          description: Wallet balance
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BalanceResponse'
+        '400':
+          description: Invalid user ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallet/{userid}/transactions:
+    get:
+      tags:
+        - Wallet
+      summary: Get paginated wallet transactions
+      operationId: getWalletTransactions
+      parameters:
+        - name: userid
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+          description: UUIDv7 cursor for pagination (transaction ID)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Paginated list of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionPageResponse'
+        '400':
+          description: Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallet/{userid}/withdraw:
+    post:
+      tags:
+        - Wallet
+      summary: Withdraw from wallet
+      operationId: withdrawFromWallet
+      parameters:
+        - name: userid
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Withdrawal transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionIDResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Withdrawal failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/wallet/{userid}/charge:
+    post:
+      tags:
+        - Wallet
+      summary: Charge wallet
+      operationId: chargeWallet
+      parameters:
+        - name: userid
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionRequest'
+      responses:
+        '200':
+          description: Charge transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionIDResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Charge failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 
 components:
   schemas:
@@ -208,6 +372,81 @@ components:
           format: date-time
           description: Timestamp when the liveness check was performed
           example: "2024-01-15T10:30:00Z"
+
+    BalanceResponse:
+      type: object
+      properties:
+        total_balance:
+          type: integer
+          format: int64
+        available_balance:
+          type: integer
+          format: int64
+
+    TransactionRequest:
+      type: object
+      required:
+        - amount
+        - idempotency
+      properties:
+        amount:
+          type: integer
+          format: int64
+          example: 1000
+        idempotency:
+          type: string
+          format: uuid
+          example: "018f3d48-3e1a-7b1a-a3df-e2f65c9a1234"
+        release_time:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-01-15T10:30:00Z"
+
+    TransactionIDResponse:
+      type: object
+      properties:
+        data:
+          type: string
+          format: uuid
+          description: The created transaction ID
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ credit, debit ]
+        status:
+          type: string
+          enum: [ blocked, failed, cancelled, success ]
+        amount:
+          type: integer
+        release_time:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    TransactionPageResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            transactions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Transaction'
+            next_cursor:
+              type: string
+              format: uuid
+              nullable: true
 
   securitySchemes:
     BearerAuth:
