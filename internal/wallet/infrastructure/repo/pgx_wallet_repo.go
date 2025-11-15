@@ -134,7 +134,7 @@ func (dc *PgxWalletRepo) GetTransactionList(ctx context.Context, userId int64, c
 	list := make([]entity.Transaction, 0, limit)
 	for rows.Next() {
 		t := entity.Transaction{}
-		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Status, &t.Amount, &t.CreatedAt, &t.Released, &t.ReleaseTime, &t.Idempotency); err != nil {
+		if err := rows.Scan(&t.ID, &t.UserID, &t.Type, &t.Status, &t.Amount, &t.CreatedAt, &t.Released, &t.ReleaseTime, &t.Idempotency, &t.RetryCount); err != nil {
 			return nil, fmt.Errorf("error in reading transaction row: %w", err)
 		}
 		list = append(list, t)
@@ -185,13 +185,13 @@ func (dc *PgxWalletRepo) GetPendingTransactions(ctx context.Context, limit int) 
 
 	rows, err := dc.db.Query(opCtx, getPendingTransactions, limit)
 	if err != nil {
-		return nil, fmt.Errorf("release due transactions failed: %w", err)
+		return nil, fmt.Errorf("get pending transactions failed: %w", err)
 	}
 	defer rows.Close()
 	list := make([]entity.Transaction, 0, limit)
 	for rows.Next() {
 		t := entity.Transaction{}
-		if err := rows.Scan(&t.ID, &t.RetryCount, &t.Amount, &t.Idempotency); err != nil {
+		if err := rows.Scan(&t.ID, &t.UserID, &t.RetryCount, &t.Amount, &t.Idempotency); err != nil {
 			return nil, fmt.Errorf("error in reading due transaction row: %w", err)
 		}
 		list = append(list, t)
@@ -201,6 +201,30 @@ func (dc *PgxWalletRepo) GetPendingTransactions(ctx context.Context, limit int) 
 	}
 
 	return list, nil
+}
+
+func (dc *PgxWalletRepo) UpdateTransactionStatus(ctx context.Context, id *uuid.UUID, txStatus entity.Status, bankTxID *uuid.UUID) error {
+	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	_, err := dc.db.Exec(opCtx, updateTransactionStatus, id, txStatus, bankTxID)
+	if err != nil {
+		return fmt.Errorf("something happened while trying to update failed transactions: %w", err)
+	}
+
+	return nil
+}
+
+func (dc *PgxWalletRepo) IncreaseTransactionRetryCount(ctx context.Context, id *uuid.UUID) error {
+	opCtx, cancel := context.WithTimeout(ctx, 1*time.Second)
+	defer cancel()
+
+	_, err := dc.db.Exec(opCtx, increaseRetryCount, id)
+	if err != nil {
+		return fmt.Errorf("increasing transaction retry count failed: %w", err)
+	}
+
+	return nil
 }
 
 // Close gracefully close all database pool connections
@@ -309,14 +333,14 @@ FROM wallets
 WHERE user_id = $1
 `
 	getTransactionsFirstPage = `
-SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key
+SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key, retry_count
 FROM transactions
 WHERE user_id = $1
 ORDER BY ID DESC
 LIMIT $2
 `
 	getTransactionsNextPage = `
-SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key
+SELECT id, user_id, type, status, amount, created_at, released, release_time, idempotency_key, retry_count
 FROM transactions
 WHERE user_id = $1
 AND id < $3
@@ -324,12 +348,28 @@ ORDER BY ID DESC
 LIMIT $2
 `
 	getPendingTransactions = `
-UPDATE transactions
+WITH claimed AS (
+    SELECT id
+    FROM transactions
+    WHERE status = 'pending'
+      AND (last_retry IS NULL OR last_retry <= NOW() - INTERVAL '30 seconds')
+    ORDER BY id
+    LIMIT $1
+)
+UPDATE transactions t
 SET last_retry = NOW()
-WHERE status = 'pending'
-  AND (last_retry IS NULL OR last_retry <= NOW() - INTERVAL '5 minutes')
-ORDER BY id
-LIMIT $1
-RETURNING id, retry_count, amount, idempotency_key;
+FROM claimed c
+WHERE t.id = c.id
+RETURNING t.id, t.user_id, t.retry_count, t.amount, t.idempotency_key;
+`
+	updateTransactionStatus = `
+UPDATE transactions
+SET status = $2, bank_response_id = $3, updated_at = NOW()
+WHERE id = $1
+`
+	increaseRetryCount = `
+UPDATE transactions
+SET retry_count = retry_count + 1, updated_at = NOW()
+WHERE id = $1
 `
 )
