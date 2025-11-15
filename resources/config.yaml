@@ -21,17 +21,11 @@ server:
     - "Authorization"
     - "X-Requested-With"
 
-# Database configuration
-database:
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "postgres"
-  dbname: "wallet_db"
-  sslmode: "disable"
-  max_open_conns: 35
-  max_idle_conns: 10
-  conn_max_lifetime: "5m"
+# Worker configuration
+release_worker:
+  worker_count: 1
+  batch_size: 200
+  interval: "1s"
 
 test_database:
   host: "localhost"

@@ -12,6 +12,7 @@ type Config struct {
 	Server       ServerConfig   `mapstructure:"server"`
 	Database     DatabaseConfig `mapstructure:"database"`
 	TestDatabase DatabaseConfig `mapstructure:"test_database"`
+	Release      ReleaseConfig  `mapstructure:"release_worker"`
 	Logging      LoggingConfig  `mapstructure:"logging"`
 	Health       HealthConfig   `mapstructure:"health"`
 	Swagger      SwaggerConfig  `mapstructure:"swagger"`
@@ -41,6 +42,12 @@ type DatabaseConfig struct {
 	MaxOpenConns    int           `mapstructure:"max_open_conns"`
 	MaxIdleConns    int           `mapstructure:"max_idle_conns"`
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
+}
+
+type ReleaseConfig struct {
+	WorkerCount int           `mapstructure:"worker_count"`
+	BatchSize   int           `mapstructure:"batch_size"`
+	Interval    time.Duration `mapstructure:"interval"`
 }
 
 // LoggingConfig holds logging-related configuration
@@ -122,6 +129,11 @@ func setDefaults() {
 	viper.SetDefault("test_database.max_open_conns", 25)
 	viper.SetDefault("test_database.max_idle_conns", 5)
 	viper.SetDefault("test_database.conn_max_lifetime", "5m")
+
+	// Release defaults
+	viper.SetDefault("release_worker.worker_count", "1")
+	viper.SetDefault("release_worker.batch_size", "200")
+	viper.SetDefault("release_worker.interval", "1s")
 
 	// Logging defaults
 	viper.SetDefault("logging.level", "info")
