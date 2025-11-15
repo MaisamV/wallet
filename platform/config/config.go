@@ -12,7 +12,8 @@ type Config struct {
 	Server       ServerConfig   `mapstructure:"server"`
 	Database     DatabaseConfig `mapstructure:"database"`
 	TestDatabase DatabaseConfig `mapstructure:"test_database"`
-	Release      ReleaseConfig  `mapstructure:"release_worker"`
+	Release      WorkerConfig   `mapstructure:"release_worker"`
+	Withdraw     WorkerConfig   `mapstructure:"withdraw_worker"`
 	Logging      LoggingConfig  `mapstructure:"logging"`
 	Health       HealthConfig   `mapstructure:"health"`
 	Swagger      SwaggerConfig  `mapstructure:"swagger"`
@@ -44,7 +45,7 @@ type DatabaseConfig struct {
 	ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
 }
 
-type ReleaseConfig struct {
+type WorkerConfig struct {
 	WorkerCount int           `mapstructure:"worker_count"`
 	BatchSize   int           `mapstructure:"batch_size"`
 	Interval    time.Duration `mapstructure:"interval"`
@@ -131,6 +132,11 @@ func setDefaults() {
 	viper.SetDefault("test_database.conn_max_lifetime", "5m")
 
 	// Release defaults
+	viper.SetDefault("release_worker.worker_count", "1")
+	viper.SetDefault("release_worker.batch_size", "200")
+	viper.SetDefault("release_worker.interval", "1s")
+
+	// Withdraw worker defaults
 	viper.SetDefault("release_worker.worker_count", "1")
 	viper.SetDefault("release_worker.batch_size", "200")
 	viper.SetDefault("release_worker.interval", "1s")

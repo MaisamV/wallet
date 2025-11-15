@@ -27,6 +27,11 @@ release_worker:
   batch_size: 200
   interval: "1s"
 
+withdraw_worker:
+  worker_count: 10
+  batch_size: 100
+  interval: "10s"
+
 test_database:
   host: "localhost"
   port: 5433
