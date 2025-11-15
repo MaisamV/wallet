@@ -15,13 +15,13 @@ help: ## Show this help message
 .PHONY: run
 run: ## Start development environment with docker-compose
 	@echo Starting development environment...
-	docker-compose up -d app release_worker
+	docker-compose up -d app release_worker withdraw_worker
 	@echo open http://localhost:8080/swagger to access APIs
 
 .PHONY: run-no-cache
 run-no-cache: ## Start development environment with docker-compose
 	@echo Starting development environment...
-	docker-compose up --build -d app
+	docker-compose up --build -d app release_worker withdraw_worker
 	@echo open http://localhost:8080/swagger to access APIs
 
 .PHONY: stop

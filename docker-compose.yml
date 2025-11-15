@@ -97,6 +97,23 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
+  # Withdraw worker
+  withdraw_worker:
+    build:
+      context: .
+      dockerfile: cmd/withdraw_job/Dockerfile
+    container_name: wallet-withdraw-worker
+    environment:
+      WALLET_DATABASE_HOST: postgres
+    networks:
+      - wallet-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   # Application
   app:
     build:

@@ -39,7 +39,7 @@ test_database:
   password: "postgres"
   dbname: "wallet_db"
   sslmode: "disable"
-  max_open_conns: 35
+  max_open_conns: 30
   max_idle_conns: 10
   conn_max_lifetime: "5m"
 
