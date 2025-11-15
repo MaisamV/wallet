@@ -5,11 +5,13 @@ CREATE TABLE IF NOT EXISTS transactions (
     wallet_id BIGINT NOT NULL REFERENCES wallets(id),
     user_id BIGINT NOT NULL,
     type VARCHAR(20) NOT NULL CHECK (type IN ('credit', 'debit')),
-    status VARCHAR(20) NOT NULL CHECK (status IN ('blocked', 'failed', 'cancelled', 'success')),
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'failed', 'success')),
+    retry_count        int NOT NULL DEFAULT 0,
     amount             bigint NOT NULL,
     release_time       TIMESTAMPTZ NULL,
     released           BOOLEAN NOT NULL DEFAULT FALSE,
     idempotency_key    UUID NOT NULL,
+    bank_response_id   UUID NULL,
     created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );

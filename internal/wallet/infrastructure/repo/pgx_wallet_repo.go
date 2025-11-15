@@ -191,7 +191,7 @@ WITH upserted_wallet AS (
 inserted_txn AS (
     INSERT INTO transactions 
         (wallet_id, user_id, type, status, amount, release_time, released, idempotency_key)
-    SELECT wallet_id, user_id, 'credit' AS type, 'blocked' AS status, $2 AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
+    SELECT wallet_id, user_id, 'credit' AS type, 'success' AS status, $2 AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
     FROM upserted_wallet 
     RETURNING id AS txn_id
 )
@@ -209,7 +209,7 @@ WITH updated_wallet AS (
 inserted_txn AS (
     INSERT INTO transactions 
         (wallet_id, user_id, type, status, amount, release_time, released, idempotency_key)
-    SELECT wallet_id, user_id, 'debit' AS type, 'blocked' AS status, ($2 * -1) AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
+    SELECT wallet_id, user_id, 'debit' AS type, 'pending' AS status, ($2 * -1) AS amount, $3 AS release_time, FALSE, $4 AS idempotency_key
     FROM updated_wallet
     RETURNING id AS txn_id
 )

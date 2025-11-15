@@ -15,7 +15,7 @@ const (
 type Status = string
 
 const (
-	BLOCKED  Status = "blocked"
+	pending  Status = "pending"
 	CANCELED        = "canceled"
 	FAILED          = "failed"
 	SUCCESS         = "success"

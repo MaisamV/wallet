@@ -17,18 +17,14 @@ type ChargeCommand struct {
 	ReleaseTime *time.Time
 }
 
-func (cc *ChargeCommand) IsValid() bool {
-	return cc.Amount > 0 && cc.Idempotency != nil && (cc.ReleaseTime == nil || cc.ReleaseTime.After(time.Now()))
-}
-
 func (cc *ChargeCommand) Err() error {
-	if cc.Amount > 0 {
+	if cc.Amount <= 0 {
 		return errors.New("amount cannot be negative or zero")
 	}
-	if cc.Idempotency != nil {
+	if cc.Idempotency == nil {
 		return errors.New("idempotency cannot be null")
 	}
-	if cc.ReleaseTime == nil || cc.ReleaseTime.After(time.Now()) {
+	if cc.ReleaseTime != nil && cc.ReleaseTime.Before(time.Now()) {
 		return errors.New("release time must not be in the past")
 	}
 	return nil
