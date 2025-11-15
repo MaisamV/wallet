@@ -15,7 +15,7 @@ help: ## Show this help message
 .PHONY: run
 run: ## Start development environment with docker-compose
 	@echo Starting development environment...
-	docker-compose up -d app
+	docker-compose up -d app release_worker
 	@echo open http://localhost:8080/swagger to access APIs
 
 .PHONY: run-no-cache
